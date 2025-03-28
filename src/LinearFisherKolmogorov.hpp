@@ -230,4 +230,6 @@ protected:
   TrilinosWrappers::MPI::Vector solution;
 };
 
+#include "LinearFisherKolmogorov.cpp"
+
 #endif

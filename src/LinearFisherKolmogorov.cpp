@@ -1,3 +1,5 @@
+#ifndef LINEARFISHERKOLMOGOROV_CPP
+#define LINEARFISHERKOLMOGOROV_CPP
 #include "LinearFisherKolmogorov.hpp"
 
 template <int dim>
@@ -123,25 +125,25 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
               for (unsigned int j = 0; j < dofs_per_cell; ++j)
                 {
                   // 1/deltat * integral(psi_j * psi_i)
-                  lhs_matrix(i,j) += (1.0/deltat) *
-                    fe_values->shape_value(i,q) *
-                    fe_values->shape_value(j,q) *
-                    fe_values->JxW(q);
+                  cell_lhs_matrix(i,j) += (1.0/deltat) *
+                    fe_values.shape_value(i,q) *
+                    fe_values.shape_value(j,q) *
+                    fe_values.JxW(q);
 
                   // alpha * sum(k=0...dofs_per_cell: integral(psi_k * psi_j * psi_i))
                   for (unsigned int k = 0; k < dofs_per_cell; ++k) {
-                    lhs_matrix(i,j) += alpha_loc * 
-                      fe_values->shape_value(k,q) *
-                      fe_values->shape_value(i,q) *
-                      fe_values->shape_value(j,q) *
-                      fe_values->JxW(q);
+                    cell_lhs_matrix(i,j) += alpha_loc * 
+                      fe_values.shape_value(k,q) *
+                      fe_values.shape_value(i,q) *
+                      fe_values.shape_value(j,q) *
+                      fe_values.JxW(q);
                   }
                   
                   // d^ext * integral(grad(psi_j)*grad(psi_i))
-                  lhs_matrix(i,j) += isotropic_diff *
-                    fe_values->shape_grad(i,q) *
-                    fe_values->shape_grad(j,q) *
-                    fe_values->JxW(q);
+                  cell_lhs_matrix(i,j) += isotropic_diff *
+                    fe_values.shape_grad(i,q) *
+                    fe_values.shape_grad(j,q) *
+                    fe_values.JxW(q);
                 }
             }
         }
@@ -157,7 +159,7 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
 
 template <int dim>
 void
-LinearFisherKolmogorov<dim>::assemble_rhs(const double &time)
+LinearFisherKolmogorov<dim>::assemble_rhs(const double & /*time*/)
 {
   const unsigned int dofs_per_cell = fe->dofs_per_cell;
   const unsigned int n_q           = quadrature->size();
@@ -210,9 +212,9 @@ LinearFisherKolmogorov<dim>::assemble_rhs(const double &time)
               // (1/deltat + alpha) * integral(psi_i*psi_j)
               for (unsigned int j = 0; j < dofs_per_cell; ++j) {
                 cell_rhs_matrix(i,j) += (1/deltat + alpha_loc) *
-                  fe_values->shape_value(i, q) *
-                  fe_values->shape_value(j,q) *
-                  fe_values->JxW(q);
+                  fe_values.shape_value(i, q) *
+                  fe_values.shape_value(j,q) *
+                  fe_values.JxW(q);
               }
             }
         }
@@ -331,3 +333,4 @@ LinearFisherKolmogorov<dim>::compute_error(const VectorTools::NormType &norm_typ
 
   return error;
 }
+#endif
