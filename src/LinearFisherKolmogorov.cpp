@@ -113,11 +113,6 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
 
       cell_lhs_matrix = 0.0;
 
-      // problem: how to assemble c^(n) = sum(psi_j*c_j) since it is sparsed through all the processors?
-      // possible solution: 
-      //  - when assembling lhs_matrix, in which c^(n) appears inside an integral
-      //    and multiplied by psi_i -> psi_i*psi_j*c_j != 0 only for dofs in the cell or around it.
-      //    In any case they are either owned or relevant to this processor
       for (unsigned int q = 0; q < n_q; ++q)
         {
           // Evaluate coefficients on this quadrature node.
@@ -195,15 +190,15 @@ LinearFisherKolmogorov<dim>::assemble_rhs(const double &time)
           // at the old time (tn). deal.II Functions can be computed at a
           // specific time by calling their set_time method.
 
-          // Compute f(tn+1)
-          forcing_term.set_time(time);
-          const double f_new_loc =
-            forcing_term.value(fe_values.quadrature_point(q));
+          // // Compute f(tn+1)
+          // forcing_term.set_time(time);
+          // const double f_new_loc =
+          //   forcing_term.value(fe_values.quadrature_point(q));
 
-          // Compute f(tn)
-          forcing_term.set_time(time - deltat);
-          const double f_old_loc =
-            forcing_term.value(fe_values.quadrature_point(q));
+          // // Compute f(tn)
+          // forcing_term.set_time(time - deltat);
+          // const double f_old_loc =
+          //   forcing_term.value(fe_values.quadrature_point(q));
 
           const double alpha_loc = alpha.value(fe_values.quadrature_point(q));
 
@@ -235,23 +230,6 @@ LinearFisherKolmogorov<dim>::assemble_rhs(const double &time)
 
   // IMPORTANT: creation of the right hand side
   rhs_matrix.vmult(system_rhs, solution_owned);
-
-  // NO DIRICHLET BOUNNDARY VALUES
-  // We apply boundary conditions to the algebraic system.
-  // {
-  //   std::map<types::global_dof_index, double> boundary_values;
-
-  //   std::map<types::boundary_id, const Function<dim> *> boundary_functions;
-  //   for (unsigned int i = 0; i < 6; ++i)
-  //     boundary_functions[i] = &exact_solution;
-
-  //   VectorTools::interpolate_boundary_values(dof_handler,
-  //                                            boundary_functions,
-  //                                            boundary_values);
-
-  //   MatrixTools::apply_boundary_values(
-  //     boundary_values, lhs_matrix, solution_owned, system_rhs, false);
-  // }
 }
 
 template <int dim>
