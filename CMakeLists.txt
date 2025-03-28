@@ -3,5 +3,5 @@ project(project_title LANGUAGES CXX C)
 
 include(cmake-common.cmake)
 
-add_executable(main src/main.cpp src/FisherKolmogorov3D.cpp)
+add_executable(main src/main.cpp src/FisherKolmogorov.cpp src/LinearFisherKolmogorov.cpp)
 deal_ii_setup_target(main)

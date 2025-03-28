@@ -24,6 +24,7 @@
 #include <deal.II/numerics/data_out.h>
 #include <deal.II/numerics/matrix_tools.h>
 #include <deal.II/numerics/vector_tools.h>
+#include <deal.II/grid/grid_tools.h>
 
 #include <fstream>
 #include <iostream>
@@ -63,7 +64,7 @@ public:
   {
   public:
     virtual double
-    value(const Point<dim> &p,
+    value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
         return 0.0;
@@ -75,14 +76,14 @@ public:
   {
   public:
     virtual double
-    value(const Point<dim> &p,
+    value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
       return 0.0;
     }
 
     virtual Tensor<1, dim>
-    gradient(const Point<dim> &p,
+    gradient(const Point<dim> & /*p*/,
              const unsigned int /*component*/ = 0) const override
     {
 
@@ -107,13 +108,12 @@ public:
     }
   };
 
-  // Constructor. We provide the final time, time step Delta t and theta method
+  // Constructor. We provide the final time, time step Delta t 
   // parameter as constructor arguments.
   LinearFisherKolmogorov(const std::string  &mesh_file_name_,
        const unsigned int &r_,
        const double       &T_,
-       const double       &deltat_,
-       const double       &theta_)
+       const double       &deltat_)
     : mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , pcout(std::cout, mpi_rank == 0)
@@ -121,7 +121,6 @@ public:
     , mesh_file_name(mesh_file_name_)
     , r(r_)
     , deltat(deltat_)
-    , theta(theta_)
     , mesh(MPI_COMM_WORLD)
   {}
 
@@ -196,9 +195,6 @@ protected:
 
   // Time step.
   const double deltat;
-
-  // Theta parameter of the theta method.
-  const double theta;
 
   // Mesh.
   parallel::fullydistributed::Triangulation<dim> mesh;

@@ -209,7 +209,7 @@ LinearFisherKolmogorov<dim>::assemble_rhs(const double &time)
               
               // (1/deltat + alpha) * integral(psi_i*psi_j)
               for (unsigned int j = 0; j < dofs_per_cell; ++j) {
-                cell_rhs_matrix(i,j) += (1/deltat + alpha_loc)
+                cell_rhs_matrix(i,j) += (1/deltat + alpha_loc) *
                   fe_values->shape_value(i, q) *
                   fe_values->shape_value(j,q) *
                   fe_values->JxW(q);
@@ -271,7 +271,6 @@ template <int dim>
 void
 LinearFisherKolmogorov<dim>::solve()
 {
-  assemble_matrices();
 
   pcout << "===============================================" << std::endl;
 
