@@ -133,6 +133,7 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
                   // alpha * sum(k=0...dofs_per_cell: integral(psi_k * psi_j * psi_i))
                   for (unsigned int k = 0; k < dofs_per_cell; ++k) {
                     cell_lhs_matrix(i,j) += alpha_loc * 
+                      solution_owned(k) *
                       fe_values.shape_value(k,q) *
                       fe_values.shape_value(i,q) *
                       fe_values.shape_value(j,q) *
@@ -282,8 +283,8 @@ LinearFisherKolmogorov<dim>::solve()
   {
     pcout << "Applying the initial condition" << std::endl;
 
-    exact_solution.set_time(time);
-    VectorTools::interpolate(dof_handler, exact_solution, solution_owned);
+    //exact_solution.set_time(time);
+    VectorTools::interpolate(dof_handler, c_0, solution_owned);
     solution = solution_owned;
 
     // Output the initial solution.

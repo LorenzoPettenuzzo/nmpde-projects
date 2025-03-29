@@ -55,7 +55,7 @@ public:
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return 1.0;
+      return 0.5;   //    α = 0.6/year in white and α = 0.3/year in gray matter
     }
   };
 
@@ -79,7 +79,7 @@ public:
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return 0.0;
+        return 0.0;
     }
 
     virtual Tensor<1, dim>
@@ -105,6 +105,21 @@ public:
     //               std::cos(4 * M_PI * p[2]);
 
        return result;
+    }
+  };
+
+  // Function for initial conditions.
+  class FunctionU0 : public Function<dim>
+  {
+  public:
+    virtual double
+    value(const Point<dim> & p,
+          const unsigned int /*component*/ = 0) const override
+    {
+      if (p[2]<20)    //very raw starting seeding
+        return 0.01;
+      else
+        return 0.0;
     }
   };
 
@@ -168,7 +183,8 @@ protected:
 
   AnisotropicDiffusion anisotropic_diff;
 
-  double isotropic_diff = 1.0;
+  double isotropic_diff = 150.0; //  150 mm^2/year  <-  1.5 cm^2/year
+                                 //  maybe d = 225 = 150*3/2 is better, moving from 2d to 3d
 
   // mu coefficient.
   FunctionAlpha alpha;
@@ -178,6 +194,9 @@ protected:
 
   // Exact solution.
   ExactSolution exact_solution;
+
+  // Initial conditions.
+  FunctionU0 c_0;
 
   // Current time.
   double time;
