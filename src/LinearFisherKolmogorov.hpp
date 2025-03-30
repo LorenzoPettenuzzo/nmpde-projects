@@ -116,8 +116,10 @@ public:
     value(const Point<dim> & p,
           const unsigned int /*component*/ = 0) const override
     {
-      if (p[2]<20)    //very raw starting seeding
-        return 0.01;
+      if (p[2]<15)    //very raw starting seeding
+        return 0.1;
+      else if (p[2]>=15 && p[2]<20)
+          return (-0.02 * p[2] + 0.4);
       else
         return 0.0;
     }

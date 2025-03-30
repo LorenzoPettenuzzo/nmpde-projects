@@ -106,6 +106,8 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
 
   lhs_matrix = 0.0;
 
+  std::vector<double>         solution_loc(n_q);
+
   for (const auto &cell : dof_handler.active_cell_iterators())
     {
       if (!cell->is_locally_owned())
@@ -115,6 +117,8 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
 
       cell_lhs_matrix = 0.0;
 
+      fe_values.get_function_values(solution, solution_loc);
+      
       for (unsigned int q = 0; q < n_q; ++q)
         {
           // Evaluate coefficients on this quadrature node.
@@ -133,7 +137,7 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
                   // alpha * sum(k=0...dofs_per_cell: integral(psi_k * psi_j * psi_i))
                   for (unsigned int k = 0; k < dofs_per_cell; ++k) {
                     cell_lhs_matrix(i,j) += alpha_loc * 
-                      solution_owned(k) *
+                      solution_loc[q] *
                       fe_values.shape_value(k,q) *
                       fe_values.shape_value(i,q) *
                       fe_values.shape_value(j,q) *
