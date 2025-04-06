@@ -135,13 +135,13 @@ LinearFisherKolmogorov<dim>::assemble_lhs_matrix()
                     fe_values.JxW(q);
 
                   // alpha * sum(k=0...dofs_per_cell: integral(psi_k * psi_j * psi_i))
+                  double precomputed_term = alpha_loc * solution_loc[q] *
+                                            fe_values.shape_value(i, q) *
+                                            fe_values.shape_value(j, q) *
+                                            fe_values.JxW(q);
                   for (unsigned int k = 0; k < dofs_per_cell; ++k) {
-                    cell_lhs_matrix(i,j) += alpha_loc * 
-                      solution_loc[q] *
-                      fe_values.shape_value(k,q) *
-                      fe_values.shape_value(i,q) *
-                      fe_values.shape_value(j,q) *
-                      fe_values.JxW(q);
+                    cell_lhs_matrix(i, j) += precomputed_term *
+                                             fe_values.shape_value(k, q);
                   }
                   
                   // d^ext * integral(grad(psi_j)*grad(psi_i))
