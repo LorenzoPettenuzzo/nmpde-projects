@@ -1,5 +1,6 @@
 \documentclass[12pt, letterpaper]{article}
 
+\usepackage{amsmath}
 
 \title{Fisher-Kolmogorov equations for neurodegenerative diseases}
 \author{Andrea Boin, Giacomo Pauletti, Lorenzo Pettenuzzo}
@@ -13,13 +14,29 @@
 \pagebreak
 
 \section{Introduction}
-Description of the problem.
+The objective of this project is to apply various numerical methods to solve the Fisher-Kolmogorov equations, which are used to model the spread of misfolded proteins in the brain, a process associated with numerous neurodegenerative diseases.
 
 \subsection{Fisher-Kolmogorov equation}
-Description of the equation.
+\[
+\begin{cases}
+\displaystyle \frac{\partial c}{\partial t} - \nabla \cdot (D \nabla c) - \alpha c(1 - c) = 0 & \text{in } \Omega\\
+\displaystyle D \nabla c \cdot \mathbf{n} = 0 & \text{on } \partial \Omega\\
+c(t=0)=c_0 & \text{in } \Omega
+\end{cases}
+\]
+$c$: concentration of the misfolded protein in a zone of the brain $(0\leq c\leq1)$\\
+$\alpha$: constant of concentration growth\\
+$D$: diffusion coefficient of the misfolded protein.\\
+It can be isotropic (a scalar) or anisotropic (a square matrix).\\
+In case of anisotropic coefficient the term can be computed as:
+$$\underbar{D}=d^{\text{ext}}\underbar{I}+d^{\text{axn}}(\mathbf{n}\otimes\mathbf{n})$$
+where $d^{\text{ext}}$ is the extracellular diffusion term, $d^{\text{axn}}$ is the axonal diffusion term and $\mathbf{n}$ the direction of axonal diffusion. Usually extracellular diffusion is slower than axonal diffusion: $d^{\text{ext}}<d^{\text{axn}}$.\\
+
+The Fisher-Kolmogorov equation is a \textbf{diffusion-reaction} equation with a nonlinear forcing term that can be used to model population growth. In this case it is used to model the spreading of proteins in the brain. 
 
 \subsection{Mesh}
-Mesh explanation.
+The mesh we used is a 3D representation of the human brain.
+\pagebreak
 
 \section{Methods}
 List and description of the implemented methods with numerical analysis.
