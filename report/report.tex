@@ -13,8 +13,9 @@
 \tableofcontents
 \pagebreak
 
+% TODO: paper citation
 \section{Introduction}
-The objective of this project is to apply various numerical methods to solve the Fisher-Kolmogorov equations, which are used to model the spread of misfolded proteins in the brain, a process associated with numerous neurodegenerative diseases.
+The objective of this project is to apply various numerical methods to solve the Fisher-Kolmogorov equations to reproduce the results of the paper \cite{diffusion-paper}. The Fisher-Kolmogorov equations can be used to effectively model the spread of misfolded proteins in the brain, a process associated with numerous neurodegenerative diseases.
 
 \subsection{Fisher-Kolmogorov equation}
 \[
@@ -30,25 +31,39 @@ $D$: diffusion coefficient of the misfolded protein.\\
 It can be isotropic (a scalar) or anisotropic (a square matrix).\\
 In case of anisotropic coefficient the term can be computed as:
 $$\underbar{D}=d^{\text{ext}}\underbar{I}+d^{\text{axn}}(\mathbf{n}\otimes\mathbf{n})$$
-where $d^{\text{ext}}$ is the extracellular diffusion term, $d^{\text{axn}}$ is the axonal diffusion term and $\mathbf{n}$ the direction of axonal diffusion. Usually extracellular diffusion is slower than axonal diffusion: $d^{\text{ext}}<d^{\text{axn}}$.\\
-
-The Fisher-Kolmogorov equation is a \textbf{diffusion-reaction} equation with a nonlinear forcing term that can be used to model population growth. In this case it is used to model the spreading of proteins in the brain. 
-
-\subsection{Mesh}
-The mesh we used is a 3D representation of the human brain.
+where $d^{\text{ext}}$ is the extracellular diffusion term, $d^{\text{axn}}$ is the axonal diffusion term and $\mathbf{n}$ the direction of axonal diffusion.\\
+Usually extracellular diffusion is slower than axonal diffusion: $d^{\text{ext}}<d^{\text{axn}}$.\\
+The Fisher-Kolmogorov equation is a \textbf{diffusion-reaction} equation with a nonlinear forcing term that can be used to model population growth. In this case it is used to model the spreading of proteins in the brain.\\
+The interested problem is a \textbf{nonlinear parabolic PDE} with \textbf{Neumann boundary conditions}. 
 \pagebreak
 
+\subsection{Mesh}
+The mesh we used for the simulation is a 3D representation of a hemisphere of the human brain with 21211 points and 42450 cells.\\
+To process the mesh with our software, we did convert the format from \textit{.stl} to \textit{.msh} using \textbf{GMSH} with the following procedure:
+\begin{enumerate}
+    \item Import the mesh (\textit{.stl}) in GMSH
+    \item From the left menu, select "geometry $\rightarrow$ add $\rightarrow$ volume"
+    \item Save the new generated \textit{.geo} file
+    \item Define the 3D mesh: "mesh $\rightarrow$ define $\rightarrow$ 3D"
+    \item Export the file as \textit{.msh}: "file $\rightarrow$ export $\rightarrow$ msh"
+\end{enumerate}
+
 \section{Methods}
-List and description of the implemented methods with numerical analysis.
 
-\subsection{1D implementation}
-\subsubsection{Stability and Accuracy}
-\subsubsection{Algorithm}
+The weak formulation of the problem is:
 
-\subsection{Fully explicit}
-\subsubsection{Stability and Accuracy}
+$$\int_\Omega\frac{\delta c}{\delta t}vd\Omega+\int_\Omega D\nabla c\nabla vd\Omega-\int_\Omega\alpha c(1-c)vd\Omega=0$$\\
+We used two methods to discretize the Fisher-Kolmogorov equations:
+\begin{itemize}
+    \item A \textbf{linearly implicit} scheme in which the linear terms have been treated implicitly while the nonlinear terms explicitly to get rid of nonlinarities.
+    \item A \textbf{fully implicit} scheme in which all terms in the equation have been treated implicitly, and then the nonlinear parts have been solved with the Newton method.
+\end{itemize}
 
-\subsection{Semi-implicit}
+%\subsection{1D implementation}
+%\subsubsection{Stability and Accuracy}
+%\subsubsection{Algorithm}
+
+\subsection{Linearly implicit}
 \subsubsection{Stability and Accuracy}
 
 \subsection{Fully implicit}
@@ -58,5 +73,11 @@ Stability and accuracy analysis of the implemented methods.
 
 \section{Results and algorithmic comparation}
 Results of the project for all the implemented algorithms and graphs.
+
+\begin{thebibliography}{9}
+    \bibitem{diffusion-paper}
+    J. Weickenmeier, M. Jucker, A. Goriely, and E. Kuhl. A physics-based model explains the prion-like features of neurodegeneration in Alzheimer’s disease, Parkinson’s disease, and amyotrophic lateral sclerosis. Journal of the Mechanics and
+    Physics of Solids, 124:264–281, 2019.
+\end{thebibliography}
 
 \end{document}
