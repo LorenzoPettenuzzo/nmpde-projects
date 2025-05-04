@@ -53,7 +53,7 @@ class FisherKolmogorov
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-        return 150.0;   // 150 mm^2/year  <-  1.5 cm^2/year
+        return 100.0;   // 150 mm^2/year  <-  1.5 cm^2/year
                         // maybe d = 225 = 150*3/2 is better,
                         // moving from 2d to 3d
     }
@@ -86,6 +86,18 @@ class FisherKolmogorov
         return 0.0;
     }
   };
+
+  class CritTime0 : public Function<dim>
+  {
+    public:
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+        return 0.0;
+    }
+  };
+
 
   // Constructor. We provide the final time, time step Delta t and theta method
   // parameter as constructor arguments.
@@ -153,6 +165,9 @@ class FisherKolmogorov
   // Initial conditions.
   FunctionU0 c_0;
 
+  // Initial conditions for the critical time.
+  CritTime0 c_crit;
+
   // Current time.
   double time;
 
@@ -205,6 +220,9 @@ class FisherKolmogorov
 
   // System solution at previous time step.
   TrilinosWrappers::MPI::Vector solution_old;
+
+  // System solution for the critical time step.
+  TrilinosWrappers::MPI::Vector critical_time_solution;
 };
 
 #include "FisherKolmogorov.cpp"

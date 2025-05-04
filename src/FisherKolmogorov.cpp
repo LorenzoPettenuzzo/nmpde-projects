@@ -85,6 +85,8 @@ FisherKolmogorov<dim>::setup()
 
     solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
     solution_old = solution;
+
+    critical_time_solution.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   }
 }
 
@@ -112,6 +114,8 @@ FisherKolmogorov<dim>::assemble_system()
   std::vector<double>         solution_loc(n_q);
   std::vector<Tensor<1, dim>> solution_gradient_loc(n_q);
 
+  std::vector<double>  crit_t_loc(n_q);
+
   // Value of the solution at previous timestep (un) on current cell.
   std::vector<double> solution_old_loc(n_q);
 
@@ -130,6 +134,7 @@ FisherKolmogorov<dim>::assemble_system()
       fe_values.get_function_values(solution, solution_loc);
       fe_values.get_function_gradients(solution, solution_gradient_loc);
       fe_values.get_function_values(solution_old, solution_old_loc);
+      fe_values.get_function_values(critical_time_solution, crit_t_loc);
 
       for (unsigned int q = 0; q < n_q; ++q)
         {
@@ -217,25 +222,6 @@ FisherKolmogorov<dim>::solve_newton()
   unsigned int n_iter        = 0;
   double       residual_norm = residual_tolerance + 1;
 
-  // We apply the boundary conditions to the initial guess (which is stored in
-  // solution_owned and solution).
-  /*{
-    // Remove/Modify this braket !!!!!!!!!!!!
-    IndexSet dirichlet_dofs = DoFTools::extract_boundary_dofs(dof_handler);
-    dirichlet_dofs          = dirichlet_dofs & dof_handler.locally_owned_dofs();
-
-    //function_g.set_time(time);
-
-    TrilinosWrappers::MPI::Vector vector_dirichlet(solution_owned);
-    VectorTools::interpolate(dof_handler, function_g, vector_dirichlet);
-
-    for (const auto &idx : dirichlet_dofs)
-      solution_owned[idx] = vector_dirichlet[idx];
-
-    solution_owned.compress(VectorOperation::insert);
-    solution = solution_owned;
-  }*/
-
   while (n_iter < n_max_iters && residual_norm > residual_tolerance)
     {
       assemble_system();
@@ -268,7 +254,7 @@ void
 FisherKolmogorov<dim>::output(const unsigned int &time_step) const
 {
   DataOut<dim> data_out;
-  data_out.add_data_vector(dof_handler, solution, "u");
+  data_out.add_data_vector(dof_handler, solution, "concentration");
 
   std::vector<unsigned int> partition_int(mesh.n_active_cells());
   GridTools::get_subdomain_association(mesh, partition_int);
@@ -296,6 +282,9 @@ FisherKolmogorov<dim>::solve()
     VectorTools::interpolate(dof_handler, c_0, solution_owned);
     solution = solution_owned;
 
+    // initialize the critical time solution
+    VectorTools::interpolate(dof_handler, c_crit, critical_time_solution);
+
     // Output the initial solution.
     output(0);
     pcout << "-----------------------------------------------" << std::endl;
@@ -320,8 +309,39 @@ FisherKolmogorov<dim>::solve()
 
       output(time_step);
 
+      // Check for time of critical concentration.
+      std::vector<types::global_dof_index> dof_indices;
+      for (const auto &cell : dof_handler.active_cell_iterators())
+        {
+          if (!cell->is_locally_owned())
+            continue;
+
+          {
+            dof_indices.resize(cell->get_fe().dofs_per_cell);
+            cell->get_dof_indices(dof_indices);
+            for (unsigned int i = 0; i < dof_indices.size(); ++i)
+              {
+                if ((solution[dof_indices[i]] > 0.95) &&
+                  (critical_time_solution[dof_indices[i]] == 0.0))
+                  {
+                    // Store the critical time solution.
+                    critical_time_solution[dof_indices[i]] = time;
+                  }
+              }
+          }
+        }
+      critical_time_solution.compress(VectorOperation::insert);
+
       pcout << std::endl;
     }
+
+    //Output critical time solution.
+    DataOut<dim> data_out;
+    data_out.add_data_vector(dof_handler, critical_time_solution,
+                              "critical_time");
+    data_out.build_patches();
+    data_out.write_vtu_with_pvtu_record(
+      "./", "output_crit_time", time_step, MPI_COMM_WORLD, 3);
 }
 
 #endif // FISHERKOLMOGOROV_CPP
