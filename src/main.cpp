@@ -14,7 +14,7 @@ int main(int argc, char *argv[]) {
 
     auto t_start = std::chrono::high_resolution_clock::now();
 
-    FisherKolmogorov<3> lfk("../mesh/brain-h3.0.msh", 1, 2, 1);
+    FisherKolmogorov<3> lfk("../mesh/brain-h3.0.msh", 1, 40, 0.1);
     lfk.setup();
     lfk.solve();
 
