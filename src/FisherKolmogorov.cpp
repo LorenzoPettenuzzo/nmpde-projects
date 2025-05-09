@@ -285,8 +285,8 @@ FisherKolmogorov<dim>::solve()
     // initialize the critical time solution
     VectorTools::interpolate(dof_handler, c_crit, critical_time_solution);
 
-    // Output the initial solution.
-    output(0);
+    // Output the initial solution. [OPTIONAL]
+    //output(0);
     pcout << "-----------------------------------------------" << std::endl;
   }
 
@@ -316,7 +316,8 @@ FisherKolmogorov<dim>::solve()
       // problem.
       solve_newton();
 
-      output(time_step);
+      //Output current solution. [OPTIONAL]
+      //output(time_step);
 
       // Check for time of critical concentration.
       std::vector<types::global_dof_index> dof_indices;
@@ -349,9 +350,9 @@ FisherKolmogorov<dim>::solve()
       //Process 0 writes the critical fraction to the file.
       if (Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
         {
-          output_file << crit_frac_global / (double)dof_handler.n_dofs()
+          output_file << crit_frac_global
                       << std::endl;
-          pcout << "Critical fraction = " << crit_frac_global / (double)dof_handler.n_dofs()
+          pcout << "Critical fraction = " << crit_frac_global
                 << std::endl;
         }
       //output_file << crit_frac_global / dof_handler.n_dofs() << std::endl;
