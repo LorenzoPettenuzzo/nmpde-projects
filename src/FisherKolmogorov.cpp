@@ -285,17 +285,26 @@ FisherKolmogorov<dim>::solve()
     // initialize the critical time solution
     VectorTools::interpolate(dof_handler, c_crit, critical_time_solution);
 
-    // Output the initial solution.
-    output(0);
+    // Output the initial solution. [OPTIONAL]
+    //output(0);
     pcout << "-----------------------------------------------" << std::endl;
   }
 
+  //Initialize file for output
+  std::ofstream output_file("critical_fraction.txt");
+
   unsigned int time_step = 0;
+
+  double crit_frac = 0.0;
+  double crit_frac_global = 0.0;
 
   while (time < T - 0.5 * deltat)
     {
       time += deltat;
       ++time_step;
+
+      crit_frac = 0.0;
+      crit_frac_global = 0.0;
 
       // Store the old solution, so that it is available for assembly.
       solution_old = solution;
@@ -307,7 +316,8 @@ FisherKolmogorov<dim>::solve()
       // problem.
       solve_newton();
 
-      output(time_step);
+      //Output current solution. [OPTIONAL]
+      //output(time_step);
 
       // Check for time of critical concentration.
       std::vector<types::global_dof_index> dof_indices;
@@ -321,16 +331,32 @@ FisherKolmogorov<dim>::solve()
             cell->get_dof_indices(dof_indices);
             for (unsigned int i = 0; i < dof_indices.size(); ++i)
               {
-                if ((solution[dof_indices[i]] > 0.95) &&
-                  (critical_time_solution[dof_indices[i]] == 0.0))
+                if ((solution[dof_indices[i]] > 0.95))
                   {
+                  crit_frac += 1.0;
+                  if (critical_time_solution[dof_indices[i]] == 0.0)
+                    {
                     // Store the critical time solution.
                     critical_time_solution[dof_indices[i]] = time;
+                    }
                   }
               }
           }
         }
       critical_time_solution.compress(VectorOperation::insert);
+
+      //Update critical fraction file.
+      crit_frac_global = Utilities::MPI::sum(crit_frac, MPI_COMM_WORLD);
+      //Process 0 writes the critical fraction to the file.
+      if (Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
+        {
+          output_file << crit_frac_global
+                      << std::endl;
+          pcout << "Critical fraction = " << crit_frac_global
+                << std::endl;
+        }
+      //output_file << crit_frac_global / dof_handler.n_dofs() << std::endl;
+      //output_file.flush();
 
       pcout << std::endl;
     }
@@ -342,6 +368,9 @@ FisherKolmogorov<dim>::solve()
     data_out.build_patches();
     data_out.write_vtu_with_pvtu_record(
       "./", "output_crit_time", time_step, MPI_COMM_WORLD, 3);
+
+    //Close the output file.
+    output_file.close();
 }
 
 #endif // FISHERKOLMOGOROV_CPP
