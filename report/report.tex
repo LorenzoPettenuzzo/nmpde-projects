@@ -56,10 +56,11 @@ To process the mesh with our software, we did convert the format from \textit{.s
     \item Export the file as \textit{.msh}: "file $\rightarrow$ export $\rightarrow$ msh"
 \end{enumerate}
 
-% TODO: consideration about the limits of the mesh (no axons, ...)
+\noindent The mesh isn't associated to any function that could provide information about axonal orientation so an anisotropic model can't be used to accurately simulate the evolution of the system.
+\noindent Also there is no distinction between white and grey matter in the mesh. Different kinds of matter have different reaction coefficients so we used an average of the two for our simulations. 
 
 \subsection{Weak formulation and semi-discretized formulation}
-By choosing $V=H^1=\{v\in L^2|\nabla v\in L^2\}$ and considering a time domain $(0, T)$, the weak formulation of the problem is:
+By choosing a domain $V=H^1=\{v\in L^2|\nabla v\in L^2\}$ and considering a time domain $(0, T)$, the weak formulation of the problem is:
 
 \vspace{1em}
 \noindent Find $c(t)\in V$ such that $\forall v\in V$ and $\forall t\in(0,T)$:
@@ -139,6 +140,7 @@ and the \textbf{forcing term} is:
 $$F_i^n=\frac1{\Delta t}\langle c_{h,j}^n,\phi_i\rangle-n(c_{h,j}^n,\phi_i)$$
 
 \subsubsection{Algorithm}
+
 
 \subsubsection{Stability and Accuracy}
 The accuracy for this method is the same as the explicit one: $O(\Delta t)$ for time and $O(h^2)$ for space.
