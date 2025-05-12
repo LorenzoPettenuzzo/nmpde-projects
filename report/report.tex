@@ -26,16 +26,23 @@ The objective of this project is to apply various numerical methods to solve the
 c(t=0)=c_0 & \text{in } \Omega
 \end{cases}
 \]
-$c$: concentration of the misfolded protein in a zone of the brain $(0\leq c\leq1)$\\
-$\alpha$: constant of concentration growth\\
-$D$: diffusion coefficient of the misfolded protein.\\
+\begin{itemize}
+    \item $c$: concentration of the misfolded protein in a region of the brain $(0\leq c\leq1)$
+    \item $\alpha$: constant of concentration growth
+    \item $D$: diffusion coefficient of the misfolded protein.\\
 It can be isotropic (a scalar) or anisotropic (a square matrix).\\
 In case of anisotropic coefficient the term can be computed as:
+
 $$\underbar{D}=d^{\text{ext}}\underbar{I}+d^{\text{axn}}(\mathbf{n}\otimes\mathbf{n})$$
-where $d^{\text{ext}}$ is the extracellular diffusion term, $d^{\text{axn}}$ is the axonal diffusion term and $\mathbf{n}$ the direction of axonal diffusion.\\
-Usually extracellular diffusion is slower than axonal diffusion: $d^{\text{ext}}<d^{\text{axn}}$.\\
-The Fisher-Kolmogorov equation is a \textbf{diffusion-reaction} equation with a nonlinear forcing term that can be used to model population growth. In this case it is used to model the spreading of proteins in the brain.\\
-The interested problem is a \textbf{nonlinear parabolic PDE} with \textbf{Neumann boundary conditions}. 
+
+where $d^{\text{ext}}$ is the extracellular diffusion term, $d^{\text{axn}}$ is the axonal diffusion term and $\mathbf{n}$ the direction of axonal diffusion.
+
+Usually extracellular diffusion is slower than axonal diffusion: $d^{\text{ext}}<d^{\text{axn}}$.
+
+The Fisher-Kolmogorov equation is a \textbf{diffusion-reaction} equation with a nonlinear forcing term that can be used to model population growth. In this case it is used to model the spreading of proteins in the brain.
+
+The interested problem is a \textbf{nonlinear parabolic PDE} with \textbf{Neumann boundary conditions}.
+\end{itemize} 
 \pagebreak
 
 \subsection{Mesh}
@@ -84,10 +91,11 @@ We studied the problem with 3 methods and implemented 2 of them algorithmically:
     \item An \textbf{implicit} scheme in which all terms in the equation have been treated implicitly, and then the nonlinear parts have been solved with the Newton method.
 \end{itemize}
 
-\subsection{Explicit scheme}
-To obtain a full discretization of the problem we need to partition the time domain in $N$ partitions of size $\Delta t$, obtaining $(0, T)=(0,N\Delta t)=\bigcup_{n=1}^N(t^n, t^{n+1}]$ where $t^{n+1}-t^n=\Delta t$, $t^0=0$ and $t^N=T$. We can then use an upper-index notation to identify time dependent elements: $c^n = c(t^n)$.
+\noindent To obtain a full discretization of the problem we need to partition the time domain in $N$ partitions of size $\Delta t$, obtaining $(0, T)=(0,N\Delta t)=\bigcup_{n=1}^N(t^n, t^{n+1}]$ where $t^{n+1}-t^n=\Delta t$, $t^0=0$ and $t^N=T$. We can then use an upper-index notation to identify time dependent elements: $c^n = c(t^n)$.
 
-\noindent The fully discrete formulation for the \textbf{explicit} scheme becomes:
+\subsection{Explicit scheme}
+
+The fully discrete formulation for the \textbf{explicit} scheme becomes:
 
 \vspace{1em}
 \noindent
@@ -102,24 +110,40 @@ Find $c_h(t)\in V_h$ such that $c_h^0=c_{h,0}$ and $\forall n\in\{0, N\}$:
 $$Mc^{n+1}=F^n$$
 where the \textbf{mass matrix} can be computed as:
 $$M_{ij}=\frac1{\Delta t}\langle\phi_j,\phi_i\rangle$$
-and the forcing term is:
+and the \textbf{forcing term} is:
 $$F_i^n=\frac1{\Delta t}\langle c_{h,j}^n,\phi_i\rangle-a(c_{h,j}^n,\phi_i)-n(c_{h,j}^n,\phi_i)$$
 
 \subsubsection{Stability and Accuracy}
-The stability condition of the explicit scheme for this kind of equation is: $\Delta t\leq\min(\frac{h^2}{2D}, \frac2\alpha)$.
+The accuracy is $O(\Delta t)$ for time and $O(h^2)$ for space.
 
-\noindent The accuracy is $O(\Delta t)$ for time and $O(h^2)$ for space.
+% TODO: check values correctness
+\noindent The stability condition of the explicit scheme is: $\Delta t\leq\min(\frac{h^2}{2D}, \frac2\alpha)$. The first term acts as a bottleneck for the method. With our values for example ($h=1[cm], D=1.5[cm/year], \alpha=0.5[1/year]$), $\Delta t\leq\min(\frac13, 4)=\frac13$. The following methods allow for a larger choice of $\Delta t$ and are generally faster so we decided to implement them.
 
 \subsection{Mixed explicit/implicit scheme}
-The full discretization for the \textbf{linearly implicit} problem is
+The full discretization for the \textbf{mixed explicit/implicit} scheme is:
 
 \vspace{1em}
 \noindent
-find $c_h\in V_h$ such that, $\forall v_h\in V_h$:
+Find $c_h\in V_h$ such that, $\forall v_h\in V_h$ and $c_h(t=0)=c_{h,0}$:
 $$\int_\Omega\frac{c_h^{n+1}-c_h^n}{\Delta t}v_hd\Omega+a(c_h^{n+1},v_h)+n(c_h^n,v_h)=f(v_h)$$
-$$c_h(t=0)=c_{h,0}$$
+
+\noindent The problem can be rewritten, by introducing a basis $\{\phi_i\}$ for $V_h$ as:
+
+\vspace{1em}
+\noindent
+Find $c_h(t)\in V_h$ such that $c_h^0=c_{h,0}$ and $\forall n\in\{0, N\}$:
+$$Mc^{n+1}=F^n$$
+where the \textbf{mass matrix} can be computed as:
+$$M_{ij}=\frac1{\Delta t}\langle\phi_j,\phi_i\rangle+a(\phi_j,\phi_i)$$
+and the \textbf{forcing term} is:
+$$F_i^n=\frac1{\Delta t}\langle c_{h,j}^n,\phi_i\rangle-n(c_{h,j}^n,\phi_i)$$
+
+\subsubsection{Algorithm}
 
 \subsubsection{Stability and Accuracy}
+The accuracy for this method is the same as the explicit one: $O(\Delta t)$ for time and $O(h^2)$ for space.
+
+\noindent The stability condition though is better: $\Delta t\leq\frac2\alpha=4$ allowing for a larger choice of $\Delta t$ and a quicker convergence.
 
 \subsection{Implicit scheme}
 \subsubsection{Stability and Accuracy}
