@@ -2,7 +2,12 @@
 
 \usepackage{amsmath}
 \usepackage{amsfonts}
+\usepackage{algorithm2e}
 
+\RestyleAlgo{ruled}
+
+\usepackage{graphicx}
+\graphicspath{ {./pics/} }
 
 \title{Fisher-Kolmogorov equations for neurodegenerative diseases}
 \author{Andrea Boin, Giacomo Pauletti, Lorenzo Pettenuzzo}
@@ -15,6 +20,7 @@
 \tableofcontents
 \pagebreak
 
+% TODO: make introduction more formal, cleaner and add something about the objective about experimental values for the simulation (alpha average grey/white matter, D isotropic,...)
 \section{Introduction}
 The objective of this project is to apply various numerical methods to solve the Fisher-Kolmogorov equations to reproduce the results of the paper \cite{diffusion-paper}. The Fisher-Kolmogorov equations can be used to effectively model the spread of misfolded proteins in the brain, a process associated with numerous neurodegenerative diseases.
 
@@ -43,7 +49,6 @@ The Fisher-Kolmogorov equation is a \textbf{diffusion-reaction} equation with a 
 
 The interested problem is a \textbf{nonlinear parabolic PDE} with \textbf{Neumann boundary conditions}.
 \end{itemize} 
-\pagebreak
 
 \subsection{Mesh}
 The mesh we used for the simulation is a 3D representation of a hemisphere of the human brain with 21211 points and 42450 cells.\\
@@ -59,6 +64,8 @@ To process the mesh with our software, we did convert the format from \textit{.s
 \noindent The mesh isn't associated to any function that could provide information about axonal orientation so an anisotropic model can't be used to accurately simulate the evolution of the system.
 \noindent Also there is no distinction between white and grey matter in the mesh. Different kinds of matter have different reaction coefficients so we used an average of the two for our simulations. 
 
+%TODO: make mathematical part cleaner with a better logic order
+%TODO: make sure math is correct and define a better notation
 \subsection{Weak formulation and semi-discretized formulation}
 By choosing a domain $V=H^1=\{v\in L^2|\nabla v\in L^2\}$ and considering a time domain $(0, T)$, the weak formulation of the problem is:
 
@@ -112,13 +119,13 @@ $$Mc^{n+1}=F^n$$
 where the \textbf{mass matrix} can be computed as:
 $$M_{ij}=\frac1{\Delta t}\langle\phi_j,\phi_i\rangle$$
 and the \textbf{forcing term} is:
-$$F_i^n=\frac1{\Delta t}\langle c_{h,j}^n,\phi_i\rangle-a(c_{h,j}^n,\phi_i)-n(c_{h,j}^n,\phi_i)$$
+$$F_i^n=\frac1{\Delta t}\langle c_h^n,\phi_i\rangle-a(c_h^n,\phi_i)-n(c_h^n,\phi_i)$$
 
 \subsubsection{Stability and Accuracy}
 The accuracy is $O(\Delta t)$ for time and $O(h^2)$ for space.
 
 % TODO: check values correctness
-\noindent The stability condition of the explicit scheme is: $\Delta t\leq\min(\frac{h^2}{2D}, \frac2\alpha)$. The first term acts as a bottleneck for the method. With our values for example ($h=1[cm], D=1.5[cm/year], \alpha=0.5[1/year]$), $\Delta t\leq\min(\frac13, 4)=\frac13$. The following methods allow for a larger choice of $\Delta t$ and are generally faster so we decided to implement them.
+\noindent The stability condition of the explicit scheme is: $\Delta t\leq\min(\frac{h^2}{2D}, \frac2\alpha)$. The first term acts as a bottleneck for the method. With our values for example ($h=1[cm], D=1.5[cm/year], \alpha=0.5[1/year]$), $\Delta t\leq\min(\frac13, 4)=\frac13$. The following methods allow for a larger choice of $\Delta t$ and are generally faster so we decided to implement them and not implement the explicit version.
 
 \subsection{Mixed explicit/implicit scheme}
 The full discretization for the \textbf{mixed explicit/implicit} scheme is:
@@ -126,7 +133,7 @@ The full discretization for the \textbf{mixed explicit/implicit} scheme is:
 \vspace{1em}
 \noindent
 Find $c_h\in V_h$ such that, $\forall v_h\in V_h$ and $c_h(t=0)=c_{h,0}$:
-$$\int_\Omega\frac{c_h^{n+1}-c_h^n}{\Delta t}v_hd\Omega+a(c_h^{n+1},v_h)+n(c_h^n,v_h)=f(v_h)$$
+$$\int_\Omega\frac{c_h^{n+1}-c_h^n}{\Delta t}v_hd\Omega+a(c_h^{n+1},v_h)+n(c_h^n,v_h)=0$$
 
 \noindent The problem can be rewritten, by introducing a basis $\{\phi_i\}$ for $V_h$ as:
 
@@ -137,10 +144,42 @@ $$Mc^{n+1}=F^n$$
 where the \textbf{mass matrix} can be computed as:
 $$M_{ij}=\frac1{\Delta t}\langle\phi_j,\phi_i\rangle+a(\phi_j,\phi_i)$$
 and the \textbf{forcing term} is:
-$$F_i^n=\frac1{\Delta t}\langle c_{h,j}^n,\phi_i\rangle-n(c_{h,j}^n,\phi_i)$$
+$$F_i^n=\frac1{\Delta t}\langle c_h^n,\phi_i\rangle-n(c_h^n,\phi_i)$$
 
 \subsubsection{Algorithm}
+The assembly of the $M$ matrix is implemented by the following algorithm:
 
+\begin{algorithm}
+    \caption{Mixed left-side matrix assemble}
+
+    \For{cell in cells\_iterator}{
+        \For{quadrature\_node in cell}{
+            \For{$i=0,i<$dofs\_per\_cell$;i++$}{
+                \For{$j=0,i<$dofs\_per\_cell$;j++$}{
+                    $M_{ij}=\Delta t^{-1} * \phi_j * \phi_i * d\Omega+a(\phi_j,\phi_i)$\;
+                }
+            }
+        }
+    }
+\end{algorithm}
+
+To assemble the $F^n$ vector we can use the precomputed value of $c$ in the following algorithm:
+
+\pagebreak
+
+\begin{algorithm}
+    \caption{Mixed right-side forcing term}
+
+    \For{cell in cells\_iterator}{
+        \For{quadrature\_node in cell}{
+            \For{$i=0,i<$dofs\_per\_cell$;i++$}{
+                $F^n_i=\Delta t^{-1} * c_h^n * \phi_i * d\Omega-n(c_h^n,\phi_i)$\;
+            }
+        }
+    }
+\end{algorithm}
+
+\noindent Then the problem can be solved by applying a linear system solver.
 
 \subsubsection{Stability and Accuracy}
 The accuracy for this method is the same as the explicit one: $O(\Delta t)$ for time and $O(h^2)$ for space.
@@ -148,15 +187,72 @@ The accuracy for this method is the same as the explicit one: $O(\Delta t)$ for 
 \noindent The stability condition though is better: $\Delta t\leq\frac2\alpha=4$ allowing for a larger choice of $\Delta t$ and a quicker convergence.
 
 \subsection{Implicit scheme}
-\subsubsection{Stability and Accuracy}
+For the \textbf{implicit} scheme the fully discretized formulation is:
 
-Stability and accuracy analysis of the implemented methods.
+\vspace{1em}
+\noindent
+Find $c_h\in V_h$ such that, $\forall v_h\in V_h$ and $c_h(t=0)=c_{h,0}$:
+$$\int_\Omega\frac{c_h^{n+1}-c_h^n}{\Delta t}v_hd\Omega+a(c_h^{n+1},v_h)+n(c_h^{n+1},v_h)=0$$
+
+\noindent In this case a nonlinear system of equations has to be solved. By renaming:
+$$
+R^{n+1}(c_h^{n+1},v_h)=\int_\Omega\frac{c_h^{n+1}-c_h^n}{\Delta t}v_hd\Omega+a(c_h^{n+1},v_h)+n(c_h^{n+1},v_h)
+$$
+we can solve the following nonlinear problem:
+
+\noindent Find $c_h\in V_h$ such that, $\forall v_h\in V_h$ and $c_h^0=c_{h,0}$:
+$$
+R^{n+1}(c_h^{n+1},v_h)=0
+$$
+
+\noindent The problem can be solved with the Newton method. The Frechet derivative of the residual is:
+$$
+a(c)(\delta, v)=\int\frac{d\delta}{dt}vd\Omega+\int D\nabla\delta\nabla vd\Omega-\int\alpha(1-2c)\delta vdx
+$$
+and it can be used in the algorithm to compute the solution.
+
+\subsubsection{Algorithm}
+For the solution of this problem two loops are required: the outer one loops over time and the inner one loops over the iterations of the Newton method.
+
+\begin{algorithm}
+    \caption{Nonlinear solver}
+
+    $n = 0$\;
+    \While{stopping criteria over n}{
+        $k = 0$\;
+        \While{stopping criteria over k}{
+            Solve $a(c_h^{n+1,(k)})(\delta^k,v_h)=-R(c_h^{n+1,(k)}, v_h)$\;
+            Update $c_h^{n+1, (k+1)}=c_h^{n+1,(k)}+\delta^k$\;
+        }
+    }
+\end{algorithm}
+\noindent In the inner loop a matrix and a vector are assemble and then the linear system is solved. 
+
+\subsubsection{Stability and Accuracy}
+The implicit method is stable for any choice of $\Delta t$ and has an accuracy quadratic in $h$: $O(h^2)$.
+
+%TODO: check the time value 20years
+\subsubsection{Results}
+The following images contain the results of the simulation at $t=20[years]$ with different coefficients.
+
+%TODO: fix image position
+\noindent\includegraphics[scale=0.1]{pics/base.png}
+\includegraphics[scale=0.1]{pics/reddiff.png}
+\includegraphics[scale=0.1]{pics/incdiff.png}
+\includegraphics[scale=0.1]{pics/incgro.png}
 
 \section{Results and algorithmic comparation}
-Results of the project for all the implemented algorithms and graphs.
+% TODO: parallelism
+% TODO: comparation between methods
+All the algorithms where implemented using Deal.II functions for parallelism.
+
+
+\noindent An interesting result we obtained from our simulations is that the concentration of proteins in the brain has approximately the same value in each region, so if the protein begins to be harmful at a specific concentration it quickly begins to affect the whole brain in a really short span of time. This correctly predicts the real examples of people affected by neurodegenerative diseases that have a really quick loss of brain functions once the disease begins to show it's signs. The following graph shows the percentage of zones that reached a critical level in the brain. As it can be seen in the graph, the critical threshold is reached with a graph similar to a sigmoid with a really steep slope, indicating a quick degeneration for the disease.
+
+\noindent\includegraphics[width=\textwidth]{pics/critical_fraction_comparing.png}
+
 % TODO: graph about explosion of disease confirming real evidence
 % TODO: say some proteins might act at different percentages of concentration
-% TODO: parallelism
 
 \begin{thebibliography}{9}
     \bibitem{diffusion-paper}
