@@ -63,7 +63,9 @@ To process the mesh with our software, we did convert the format from \textit{.s
 
 \noindent The mesh isn't associated to any function that could provide information about axonal orientation so an anisotropic model can't be used to accurately simulate the evolution of the system.
 \noindent Also there is no distinction between white and grey matter in the mesh. Different kinds of matter have different reaction coefficients so we used an average of the two for our simulations. 
-
+\noindent We used an initial seed based on the function $$c(x,y,z,t=0)=\begin{cases}0.1&z<15\\-0.02z+0.4&15<z<20\\0&\text{otherwise}\end{cases}$$
+\noindent The value 0.1 is the same value used in \cite{diffusion-paper}.
+\noindent We used a decreasing ramp to avoid a step function as initial condition and obtain a continuous function.
 %TODO: make mathematical part cleaner with a better logic order
 %TODO: make sure math is correct and define a better notation
 \subsection{Weak formulation and semi-discretized formulation}
