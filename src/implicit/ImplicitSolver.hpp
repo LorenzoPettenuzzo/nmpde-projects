@@ -1,5 +1,5 @@
-#ifndef LINEARFISHERKOLMOGOROV_HPP
-#define LINEARFISHERKOLMOGOROV_HPP
+#ifndef FISHERKOLMOGOROV_HPP
+#define FISHERKOLMOGOROV_HPP
 
 #include <deal.II/base/conditional_ostream.h>
 #include <deal.II/base/quadrature_lib.h>
@@ -33,79 +33,39 @@ using namespace dealii;
 
 // Class representing the non-linear diffusion problem.
 template <int dim>
-class LinearFisherKolmogorov
+class FisherKolmogorov
 {
-public:
+  public:
 
   class AnisotropicDiffusion : public Function<dim> {
-  public:
-    virtual double
-    value(const Point<dim> & /*p*/,
-          const unsigned int /*component*/ = 0) const override
-    {
-      return 1.0;
-    }
+      public:
+      virtual double
+      value(const Point<dim> & /*p*/,
+            const unsigned int /*component*/ = 0) const override
+      {
+          return 1.0;
+      }
   };
 
-  // Function for the mu coefficient.
-  class FunctionAlpha : public Function<dim>
-  {
-  public:
+  class IsotropicDiffusion : public Function<dim> {
+    public:
     virtual double
     value(const Point<dim> & /*p*/,
           const unsigned int /*component*/ = 0) const override
     {
-      return 0.5;   //    α = 0.6/year in white and α = 0.3/year in gray matter
+        return 150.0;   // 150 mm^2/year  <-  1.5 cm^2/year
     }
-  };
-
-  // Function for the forcing term.
-  class ForcingTerm : public Function<dim>
-  {
-  public:
-    virtual double
-    value(const Point<dim> & /*p*/,
-          const unsigned int /*component*/ = 0) const override
-    {
-        return 0.0;
-    }
-  };
-
-  // Exact solution.
-  class ExactSolution : public Function<dim>
-  {
-  public:
-    virtual double
-    value(const Point<dim> & /*p*/,
-          const unsigned int /*component*/ = 0) const override
-    {
-        return 0.0;
-    }
-
-    virtual Tensor<1, dim>
-    gradient(const Point<dim> & /*p*/,
-             const unsigned int /*component*/ = 0) const override
-    {
-
-       Tensor<1, dim> result;
-
-    //   // duex / dx
-    //   result[0] = 2 * M_PI * std::sin(5 * M_PI * get_time()) *
-    //               std::cos(2 * M_PI * p[0]) * std::sin(3 * M_PI * p[1]) *
-    //               std::sin(4 * M_PI * p[2]);
-
-    //   // duex / dy
-    //   result[1] = 3 * M_PI * std::sin(5 * M_PI * get_time()) *
-    //               std::sin(2 * M_PI * p[0]) * std::cos(3 * M_PI * p[1]) *
-    //               std::sin(4 * M_PI * p[2]);
-
-    //   // duex / dz
-    //   result[2] = 4 * M_PI * std::sin(5 * M_PI * get_time()) *
-    //               std::sin(2 * M_PI * p[0]) * std::sin(3 * M_PI * p[1]) *
-    //               std::cos(4 * M_PI * p[2]);
-
-       return result;
-    }
+};
+    
+  // Function for the alpha coefficient.
+  class FunctionAlpha : public Function<dim>{
+      public:
+      virtual double
+      value(const Point<dim> & /*p*/,
+            const unsigned int /*component*/ = 0) const override
+      {
+        return 0.5;   //    α = 0.6/year in white and α = 0.3/year in gray matter
+      }
   };
 
   // Function for initial conditions.
@@ -116,7 +76,7 @@ public:
     value(const Point<dim> & p,
           const unsigned int /*component*/ = 0) const override
     {
-      if (p[2]<15)    //very raw starting seeding
+      if (p[2]<15)    //continuous initial seeding
         return 0.1;
       else if (p[2]>=15 && p[2]<20)
           return (-0.02 * p[2] + 0.4);
@@ -125,12 +85,24 @@ public:
     }
   };
 
-  // Constructor. We provide the final time, time step Delta t 
+  class CritTime0 : public Function<dim>
+  {
+    public:
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
+        return 0.0;
+    }
+  };
+
+
+  // Constructor. We provide the final time, time step Delta t and theta method
   // parameter as constructor arguments.
-  LinearFisherKolmogorov(const std::string  &mesh_file_name_,
-       const unsigned int &r_,
-       const double       &T_,
-       const double       &deltat_)
+  FisherKolmogorov (const std::string  &mesh_file_name_,
+                    const unsigned int &r_,
+                    const double       &T_,
+                    const double       &deltat_)
     : mpi_size(Utilities::MPI::n_mpi_processes(MPI_COMM_WORLD))
     , mpi_rank(Utilities::MPI::this_mpi_process(MPI_COMM_WORLD))
     , pcout(std::cout, mpi_rank == 0)
@@ -149,22 +121,19 @@ public:
   void
   solve();
 
-  // Compute the error.
-  double
-  compute_error(const VectorTools::NormType &norm_type);
+  protected:
 
-protected:
-  // Assemble the mass and stiffness matrices.
+  // Assemble the tangent problem.
   void
-  assemble_lhs_matrix();
+  assemble_system();
 
-  // Assemble the right-hand side vector and the right-hand side matrix
+  // Solve the linear system associated to the tangent problem.
   void
-  assemble_rhs(const double &time);
+  solve_linear_system();
 
-  // Solve the problem for one time step.
+  // Solve the problem for one time step using Newton's method.
   void
-  solve_time_step();
+  solve_newton();
 
   // Output.
   void
@@ -183,22 +152,19 @@ protected:
 
   // Problem definition. ///////////////////////////////////////////////////////
 
+  // Diffusion coefficients
   AnisotropicDiffusion anisotropic_diff;
 
-  double isotropic_diff = 150.0; //  150 mm^2/year  <-  1.5 cm^2/year
-                                 //  maybe d = 225 = 150*3/2 is better, moving from 2d to 3d
+  IsotropicDiffusion isotropic_diff;
 
-  // mu coefficient.
+  // Alpha coefficient.
   FunctionAlpha alpha;
-
-  // Forcing term.
-  ForcingTerm forcing_term;
-
-  // Exact solution.
-  ExactSolution exact_solution;
 
   // Initial conditions.
   FunctionU0 c_0;
+
+  // Initial conditions for the critical time.
+  CritTime0 c_crit;
 
   // Current time.
   double time;
@@ -235,22 +201,28 @@ protected:
   // DoFs relevant to the current process (including ghost DoFs).
   IndexSet locally_relevant_dofs;
 
-  // Mass matrix M / deltat.
-  TrilinosWrappers::SparseMatrix lhs_matrix;
+  // Jacobian matrix.
+  TrilinosWrappers::SparseMatrix jacobian_matrix;
 
-  // Stiffness matrix A.
-  TrilinosWrappers::SparseMatrix rhs_matrix;
+  // Residual vector.
+  TrilinosWrappers::MPI::Vector residual_vector;
 
-  // Right-hand side vector in the linear system.
-  TrilinosWrappers::MPI::Vector system_rhs;
+  // Increment of the solution between Newton iterations.
+  TrilinosWrappers::MPI::Vector delta_owned;
 
   // System solution (without ghost elements).
   TrilinosWrappers::MPI::Vector solution_owned;
 
   // System solution (including ghost elements).
   TrilinosWrappers::MPI::Vector solution;
+
+  // System solution at previous time step.
+  TrilinosWrappers::MPI::Vector solution_old;
+
+  // System solution for the critical time step.
+  TrilinosWrappers::MPI::Vector critical_time_solution;
 };
 
-#include "LinearFisherKolmogorov.cpp"
+#include "ImplicitSolver.cpp"
 
-#endif
+#endif // FISHERKOLMOGOROV_HPP

@@ -1,7 +1,7 @@
 #ifndef FISHERKOLMOGOROV_CPP
 #define FISHERKOLMOGOROV_CPP
 
-#include "FisherKolmogorov.hpp"
+#include "ImplicitSolver.hpp"
 
 template <int dim>
 void

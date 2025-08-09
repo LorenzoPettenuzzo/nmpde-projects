@@ -1,6 +1,6 @@
 #ifndef LINEARFISHERKOLMOGOROV_CPP
 #define LINEARFISHERKOLMOGOROV_CPP
-#include "LinearFisherKolmogorov.hpp"
+#include "MixedSolver.hpp"
 
 template <int dim>
 void
