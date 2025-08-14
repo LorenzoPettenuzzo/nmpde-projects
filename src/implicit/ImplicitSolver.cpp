@@ -287,6 +287,7 @@ FisherKolmogorov<dim>::solve()
 
     // Output the initial solution. [OPTIONAL]
     //output(0);
+    
     pcout << "-----------------------------------------------" << std::endl;
   }
 
