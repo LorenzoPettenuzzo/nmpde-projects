@@ -8,9 +8,6 @@ int main(int argc, char *argv[]) {
 
     freopen("log.txt", "w", stdout);
 
-    //LinearFisherKolmogorov<3> lfk("../mesh/brain-h3.0.msh", 1, 10, 0.01);
-    //LinearFisherKolmogorov<3> lfk("../mesh/brain-h3.0.msh", 1, 4, 0.25);
-
     auto t_start = std::chrono::high_resolution_clock::now();
 
     FisherKolmogorov<3> lfk("../mesh/brain-h3.0.msh", 1, 40, 0.1);
