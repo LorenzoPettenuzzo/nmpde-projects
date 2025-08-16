@@ -18,6 +18,7 @@
 #include <deal.II/grid/grid_in.h>
 
 #include <deal.II/lac/solver_cg.h>
+#include <deal.II/lac/solver_bicgstab.h>
 #include <deal.II/lac/trilinos_precondition.h>
 #include <deal.II/lac/trilinos_sparse_matrix.h>
 
@@ -33,7 +34,7 @@ using namespace dealii;
 
 // Class representing the non-linear diffusion problem.
 template <int dim>
-class LinearFisherKolmogorov
+class MixedSolver
 {
 public:
 
@@ -127,7 +128,7 @@ public:
 
   // Constructor. We provide the final time, time step Delta t 
   // parameter as constructor arguments.
-  LinearFisherKolmogorov(const std::string  &mesh_file_name_,
+  MixedSolver(const std::string  &mesh_file_name_,
        const unsigned int &r_,
        const double       &T_,
        const double       &deltat_)
@@ -238,9 +239,6 @@ protected:
   // Mass matrix M / deltat.
   TrilinosWrappers::SparseMatrix lhs_matrix;
 
-  // Stiffness matrix A.
-  TrilinosWrappers::SparseMatrix rhs_matrix;
-
   // Right-hand side vector in the linear system.
   TrilinosWrappers::MPI::Vector system_rhs;
 
@@ -249,6 +247,8 @@ protected:
 
   // System solution (including ghost elements).
   TrilinosWrappers::MPI::Vector solution;
+
+  TrilinosWrappers::MPI::Vector solution_old;
 };
 
 #include "MixedSolver.cpp"
