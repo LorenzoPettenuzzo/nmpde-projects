@@ -80,8 +80,11 @@ MixedSolver<dim>::setup()
     system_rhs.reinit(locally_owned_dofs, MPI_COMM_WORLD);
     pcout << "  Initializing the solution vector" << std::endl;
     solution_owned.reinit(locally_owned_dofs, MPI_COMM_WORLD);
+
     solution.reinit(locally_owned_dofs, locally_relevant_dofs, MPI_COMM_WORLD);
     solution_old = solution;
+
+    critical_time_solution.reinit(locally_owned_dofs, MPI_COMM_WORLD);
   }
 }
 
@@ -271,17 +274,29 @@ MixedSolver<dim>::solve()
     VectorTools::interpolate(dof_handler, c_0, solution_owned);
     solution = solution_owned;
 
-    // Output the initial solution.
-    output(0);
+    // initialize the critical time solution
+    VectorTools::interpolate(dof_handler, c_crit, critical_time_solution);
+
+    // Output the initial solution. [OPTIONAL]
+    //output(0);
+
     pcout << "-----------------------------------------------" << std::endl;
   }
 
+  std::ofstream output_file("critical_fraction.txt");
+
   unsigned int time_step = 0;
+
+  double crit_frac = 0.0;
+  double crit_frac_global = 0.0;
 
   while (time < T - 0.5 * deltat)
     {
       time += deltat;
       ++time_step;
+
+      crit_frac = 0.0;
+      crit_frac_global = 0.0;
 
       pcout << "n = " << std::setw(3) << time_step << ", t = " << std::setw(5)
             << time << ":" << std::flush;
@@ -291,33 +306,62 @@ MixedSolver<dim>::solve()
       assemble_lhs_matrix();
       assemble_rhs(time);
       solve_time_step();
-      output(time_step);
+
+      //Output current solution. [OPTIONAL]
+      //output(time_step);
+
+      // Check for time of critical concentration.
+      std::vector<types::global_dof_index> dof_indices;
+      for (const auto &cell : dof_handler.active_cell_iterators())
+        {
+          if (!cell->is_locally_owned())
+            continue;
+
+          {
+            dof_indices.resize(cell->get_fe().dofs_per_cell);
+            cell->get_dof_indices(dof_indices);
+            for (unsigned int i = 0; i < dof_indices.size(); ++i)
+              {
+                if ((solution[dof_indices[i]] > 0.95))
+                  {
+                  crit_frac += 1.0;
+                  if (critical_time_solution[dof_indices[i]] == 0.0)
+                    {
+                    // Store the critical time solution.
+                    critical_time_solution[dof_indices[i]] = time;
+                    }
+                  }
+              }
+          }
+        }
+      critical_time_solution.compress(VectorOperation::insert);
+
+      //Update critical fraction file.
+      crit_frac_global = Utilities::MPI::sum(crit_frac, MPI_COMM_WORLD);
+      //Process 0 writes the critical fraction to the file.
+      if (Utilities::MPI::this_mpi_process(MPI_COMM_WORLD) == 0)
+        {
+          output_file << crit_frac_global
+                      << std::endl;
+          pcout << "Critical fraction = " << crit_frac_global
+                << std::endl;
+        }
+      //output_file << crit_frac_global / dof_handler.n_dofs() << std::endl;
+      //output_file.flush();
+
+      pcout << std::endl;
     }
+
+    //Output critical time solution.
+    DataOut<dim> data_out;
+    data_out.add_data_vector(dof_handler, critical_time_solution,
+                              "critical_time");
+    data_out.build_patches();
+    data_out.write_vtu_with_pvtu_record(
+      "./", "output_crit_time", time_step, MPI_COMM_WORLD, 3);
+
+    //Close the output file.
+    output_file.close();
 }
 
-template <int dim>
-double
-MixedSolver<dim>::compute_error(const VectorTools::NormType &norm_type)
-{
-  FE_SimplexP<dim> fe_linear(1);
-  MappingFE        mapping(fe_linear);
-
-  const QGaussSimplex<dim> quadrature_error = QGaussSimplex<dim>(r + 2);
-
-  exact_solution.set_time(time);
-
-  Vector<double> error_per_cell;
-  VectorTools::integrate_difference(mapping,
-                                    dof_handler,
-                                    solution,
-                                    exact_solution,
-                                    error_per_cell,
-                                    quadrature_error,
-                                    norm_type);
-
-  const double error =
-    VectorTools::compute_global_error(mesh, error_per_cell, norm_type);
-
-  return error;
-}
 #endif

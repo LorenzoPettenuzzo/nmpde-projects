@@ -72,43 +72,6 @@ public:
     }
   };
 
-  // Exact solution.
-  class ExactSolution : public Function<dim>
-  {
-  public:
-    virtual double
-    value(const Point<dim> & /*p*/,
-          const unsigned int /*component*/ = 0) const override
-    {
-        return 0.0;
-    }
-
-    virtual Tensor<1, dim>
-    gradient(const Point<dim> & /*p*/,
-             const unsigned int /*component*/ = 0) const override
-    {
-
-       Tensor<1, dim> result;
-
-    //   // duex / dx
-    //   result[0] = 2 * M_PI * std::sin(5 * M_PI * get_time()) *
-    //               std::cos(2 * M_PI * p[0]) * std::sin(3 * M_PI * p[1]) *
-    //               std::sin(4 * M_PI * p[2]);
-
-    //   // duex / dy
-    //   result[1] = 3 * M_PI * std::sin(5 * M_PI * get_time()) *
-    //               std::sin(2 * M_PI * p[0]) * std::cos(3 * M_PI * p[1]) *
-    //               std::sin(4 * M_PI * p[2]);
-
-    //   // duex / dz
-    //   result[2] = 4 * M_PI * std::sin(5 * M_PI * get_time()) *
-    //               std::sin(2 * M_PI * p[0]) * std::sin(3 * M_PI * p[1]) *
-    //               std::cos(4 * M_PI * p[2]);
-
-       return result;
-    }
-  };
-
   // Function for initial conditions.
   class FunctionU0 : public Function<dim>
   {
@@ -122,6 +85,17 @@ public:
       else if (p[2]>=15 && p[2]<20)
           return (-0.02 * p[2] + 0.4);
       else
+        return 0.0;
+    }
+  };
+
+  class CritTime0 : public Function<dim>
+  {
+    public:
+    virtual double
+    value(const Point<dim> & /*p*/,
+          const unsigned int /*component*/ = 0) const override
+    {
         return 0.0;
     }
   };
@@ -149,10 +123,6 @@ public:
   // Solve the problem.
   void
   solve();
-
-  // Compute the error.
-  double
-  compute_error(const VectorTools::NormType &norm_type);
 
 protected:
   // Assemble the mass and stiffness matrices.
@@ -195,11 +165,11 @@ protected:
   // Forcing term.
   ForcingTerm forcing_term;
 
-  // Exact solution.
-  ExactSolution exact_solution;
-
   // Initial conditions.
   FunctionU0 c_0;
+
+  // Initial conditions for the critical time.
+  CritTime0 c_crit;
 
   // Current time.
   double time;
@@ -248,7 +218,11 @@ protected:
   // System solution (including ghost elements).
   TrilinosWrappers::MPI::Vector solution;
 
+  // System solution at previous time step.
   TrilinosWrappers::MPI::Vector solution_old;
+
+  // System solution for the critical time step.
+  TrilinosWrappers::MPI::Vector critical_time_solution;
 };
 
 #include "MixedSolver.cpp"
